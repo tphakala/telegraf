@@ -12,7 +12,7 @@ var (
 	errNotFound = errors.New("not found")
 )
 
-func (n *PanosAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
+func (n *PanOsAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
 
 }
 
