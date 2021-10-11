@@ -9,8 +9,19 @@ type Response struct {
 }
 
 type Result struct {
-	XMLName xml.Name `xml:"result"`
-	System  System   `xml:"system"`
+	XMLName      xml.Name `xml:"result"`
+	System       System   `xml:"system"`
+	Cps          string   `xml:"cps"`           // connections per second
+	Pps          string   `xml:"pps"`           // packets per second
+	NumMax       string   `xml:"num-max"`       // maximum sessions supported by system
+	NumActive    string   `xml:"num-active"`    // active session count
+	NumTcp       string   `xml:"num-tcp"`       // TCP session count
+	NumUdp       string   `xml:"num-udp"`       // UDP session count
+	NumIcmp      string   `xml:"num-icmp"`      // ICMP session count
+	NumBcast     string   `xml:"num-bcast"`     // Broadcast session count
+	NumMcast     string   `xml:"num-mcast"`     // Multicast session count
+	NumInstalled string   `xml:"num-installed"` // unknown
+
 }
 
 type System struct {
