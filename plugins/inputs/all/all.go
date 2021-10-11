@@ -139,6 +139,7 @@ import (
 	_ "github.com/influxdata/telegraf/plugins/inputs/opensmtpd"
 	_ "github.com/influxdata/telegraf/plugins/inputs/opentelemetry"
 	_ "github.com/influxdata/telegraf/plugins/inputs/openweathermap"
+	_ "github.com/influxdata/telegraf/plugins/inputs/pan_os_api"
 	_ "github.com/influxdata/telegraf/plugins/inputs/passenger"
 	_ "github.com/influxdata/telegraf/plugins/inputs/pf"
 	_ "github.com/influxdata/telegraf/plugins/inputs/pgbouncer"
@@ -206,5 +207,4 @@ import (
 	_ "github.com/influxdata/telegraf/plugins/inputs/zfs"
 	_ "github.com/influxdata/telegraf/plugins/inputs/zipkin"
 	_ "github.com/influxdata/telegraf/plugins/inputs/zookeeper"
-	_ "github.com/tphakala/telegraf/plugins/inputs/pan_os_api"
 )
