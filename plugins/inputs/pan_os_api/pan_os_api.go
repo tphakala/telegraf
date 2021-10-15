@@ -15,13 +15,28 @@ import (
 
 type PanOsAPI struct {
 	Urls            []string        `toml:"urls"`
+<<<<<<< Updated upstream
 	APIVersion      int64           `toml:"api_version"`
+=======
+>>>>>>> Stashed changes
 	ResponseTimeout config.Duration `toml:"response_timeout"`
+	APIkey          string          `toml:"api_key"`
+	Interfaces      []string        `toml:"interfaces"`
 	tls.ClientConfig
 
 	client *http.Client
 }
 
+<<<<<<< Updated upstream
+=======
+const (
+	// Commands
+	systemInfoCmd            = "<show><system><info></info></system></show>"
+	interfaceCounters        = "<show><interface>_if_</interface></show>"
+	resourceMonitorPerSecond = "<show><running><resource-monitor><second></second></resource-monitor></running></show>"
+)
+
+>>>>>>> Stashed changes
 var sampleConfig = `
   ## An array of API URI to gather stats.
   urls = ["http://firewall/api"]
