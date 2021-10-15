@@ -26,11 +26,6 @@ type Response struct {
 	}
 }
 
-<<<<<<< Updated upstream
-type Result struct {
-	XMLName xml.Name `xml:"result"`
-	System  System   `xml:"system"`
-=======
 type ResourceMonitor struct {
 	XMLName        xml.Name `xml:"resource-monitor"`
 	DataProcessors struct {
@@ -79,7 +74,6 @@ type Task struct {
 
 type ResourceUtilization struct {
 	XMLName xml.Name `xml:"resource-utilization"`
->>>>>>> Stashed changes
 }
 
 type System struct {

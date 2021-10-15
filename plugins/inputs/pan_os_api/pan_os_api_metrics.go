@@ -1,14 +1,16 @@
 package pan_os_api
 
 import (
+	"encoding/xml"
 	"errors"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
 	"net/url"
-<<<<<<< Updated upstream
-=======
 	"strconv"
 	"strings"
 	"time"
->>>>>>> Stashed changes
 
 	"github.com/influxdata/telegraf"
 )
@@ -18,15 +20,10 @@ var (
 	errNotFound = errors.New("not found")
 )
 
-<<<<<<< Updated upstream
-func (n *PanOsAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
-
-=======
 func (p *PanOsAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
 	addError(acc, p.gatherSignatureDetails(addr, acc))
 	addError(acc, p.gatherInterfaceCounters(addr, acc))
 	addError(acc, p.gatherCoreLoad(addr, acc))
->>>>>>> Stashed changes
 }
 
 func addError(acc telegraf.Accumulator, err error) {
@@ -40,8 +37,6 @@ func addError(acc telegraf.Accumulator, err error) {
 		acc.AddError(err)
 	}
 }
-<<<<<<< Updated upstream
-=======
 
 // convert date returned by PAN-OS API to RFC3339
 func convertDate(date string) string {
@@ -242,4 +237,3 @@ func getTags(addr *url.URL) map[string]string {
 	}
 	return map[string]string{"source": host, "port": port}
 }
->>>>>>> Stashed changes
