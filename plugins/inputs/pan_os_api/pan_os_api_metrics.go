@@ -14,7 +14,45 @@ import (
 	"github.com/influxdata/telegraf"
 )
 
+func Match(pattern, name string) (matched bool) {
+	if pattern == "" {
+		return name == pattern
+	}
+	if pattern == "*" {
+		return true
+	}
+	return deepMatchRune([]rune(name), []rune(pattern), false)
+}
+
+func deepMatchRune(str, pattern []rune, simple bool) bool {
+	for len(pattern) > 0 {
+		switch pattern[0] {
+		default:
+			if len(str) == 0 || str[0] != pattern[0] {
+				return false
+			}
+		case '?':
+			if len(str) == 0 && !simple {
+				return false
+			}
+		case '*':
+			return deepMatchRune(str, pattern[1:], simple) ||
+				(len(str) > 0 && deepMatchRune(str[1:], pattern, simple))
+		}
+		str = str[1:]
+		pattern = pattern[1:]
+	}
+	return len(str) == 0 && len(pattern) == 0
+}
+
 func (p *PanOsAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
+	if len(p.IntervalSlow) > 0 {
+		if uint32(time.Since(p.lastT).Seconds()) >= p.scanIntervalSlow {
+			p.gatherInterfaces(addr)
+			p.lastT = time.Now()
+		}
+	}
+
 	if p.GatherInterface {
 		p.gatherInterfaceMetrics(addr, acc)
 	}
@@ -129,40 +167,66 @@ func (p *PanOsAPI) gatherUpdateStatus(addr *url.URL, acc telegraf.Accumulator) e
 	return nil
 }
 
+func (p *PanOsAPI) gatherInterfaces(addr *url.URL) error {
+	const typ = "op"
+	const cmd = "<show><interface>all</interface></show>"
+	body, err := p.gatherURL(addr, typ, cmd)
+	if err != nil {
+		return err
+	}
+
+	var response = &Response{}
+
+	// parse XML
+	if err := xml.Unmarshal(body, response); err != nil {
+		return err
+	}
+
+	ifnets := response.Result.Interface.Entry
+	p.deviceInts = make([]string, len(ifnets))
+
+	// go through all reported cores
+	for i, ifnet := range ifnets {
+		p.deviceInts[i] = ifnet.Name
+	}
+	return nil
+}
+
 func (p *PanOsAPI) gatherInterfaceMetrics(addr *url.URL, acc telegraf.Accumulator) error {
 	// interface counters
 	const typ = "op"
 
-	// loop through interfaces
-	for _, i := range p.Interfaces {
+	// go through all reported cores
+	for _, ifnet := range p.deviceInts {
+		if Match("e*", ifnet) {
 
-		cmd := strings.Replace(interfaceCounters, "_if_", i, 1)
-		//body, err := p.gatherURL(addr, typ, interfaceCounters)
-		body, err := p.gatherURL(addr, typ, cmd)
-		if err != nil {
-			return err
+			cmd := strings.Replace(interfaceCounters, "_if_", ifnet, 1)
+			body, err := p.gatherURL(addr, typ, cmd)
+			if err != nil {
+				return err
+			}
+
+			var response = &Response{}
+
+			// parse XML
+			if err := xml.Unmarshal(body, response); err != nil {
+				return err
+			}
+
+			acc.AddFields(
+				"pan_os_api_interface",
+				map[string]interface{}{
+					"interface":   ifnet,
+					"in-bytes":    response.Result.Interface.Counters.Interface.Entry.InBytes,
+					"in-drops":    response.Result.Interface.Counters.Interface.Entry.InDrops,
+					"in-errors":   response.Result.Interface.Counters.Interface.Entry.InErrors,
+					"in-packets":  response.Result.Interface.Counters.Interface.Entry.InPackets,
+					"out-bytes":   response.Result.Interface.Counters.Interface.Entry.OutBytes,
+					"out-packets": response.Result.Interface.Counters.Interface.Entry.OutPackets,
+				},
+				getTags(addr),
+			)
 		}
-
-		var response = &Response{}
-
-		// parse XML
-		if err := xml.Unmarshal(body, response); err != nil {
-			return err
-		}
-
-		acc.AddFields(
-			"pan_os_api_interface",
-			map[string]interface{}{
-				"interface":   i,
-				"in-bytes":    response.Result.Interface.Counters.Interface.Entry.InBytes,
-				"in-drops":    response.Result.Interface.Counters.Interface.Entry.InDrops,
-				"in-errors":   response.Result.Interface.Counters.Interface.Entry.InErrors,
-				"in-packets":  response.Result.Interface.Counters.Interface.Entry.InPackets,
-				"out-bytes":   response.Result.Interface.Counters.Interface.Entry.OutBytes,
-				"out-packets": response.Result.Interface.Counters.Interface.Entry.OutPackets,
-			},
-			getTags(addr),
-		)
 	}
 	return nil
 }

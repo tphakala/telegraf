@@ -106,7 +106,7 @@ type Interface struct {
 	XMLName  xml.Name `xml:"ifnet"`
 	Counters Counters `xml:"counters"`
 	Hardware Hardware `xml:"hw"`
-	Entry    Entry    `xml:"entry"`
+	Entry    []Entry  `xml:"entry"`
 }
 
 type Counters struct {
@@ -118,15 +118,9 @@ type Counters struct {
 	}
 }
 
-/*
-type Interface2 struct {
-	XMLName xml.Name `xml:"ifnet"`
-	Entry   Entry    `xml:"entry"`
-}
-*/
 type Hardware struct {
 	XMLName xml.Name `xml:"hw"`
-	Entry   Entry    `xml:"entry"`
+	Entry   []Entry  `xml:"entry"`
 }
 
 type Port struct {

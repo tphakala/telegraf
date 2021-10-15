@@ -27,6 +27,7 @@ type PanOsAPI struct {
 	client           *http.Client
 	lastT            time.Time
 	scanIntervalSlow uint32
+	deviceInts       []string
 }
 
 const (
@@ -71,7 +72,7 @@ func (p *PanOsAPI) SampleConfig() string {
 }
 
 func (p *PanOsAPI) Description() string {
-	return "PAN-OS API plugin"
+	return "PAN-OS API plugin for collecting metrics from Palo Alto Networks devices"
 }
 
 func (p *PanOsAPI) Gather(acc telegraf.Accumulator) error {
