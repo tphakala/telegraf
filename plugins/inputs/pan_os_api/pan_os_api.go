@@ -14,13 +14,19 @@ import (
 )
 
 type PanOsAPI struct {
-	Urls            []string        `toml:"urls"`
-	ResponseTimeout config.Duration `toml:"response_timeout"`
-	APIkey          string          `toml:"api_key"`
-	Interfaces      []string        `toml:"interfaces"`
+	Urls               []string        `toml:"urls"`
+	ResponseTimeout    config.Duration `toml:"response_timeout"`
+	APIkey             string          `toml:"api_key"`
+	Interfaces         []string        `toml:"interfaces"`
+	GatherUpdateStatus bool            `toml:"gather_update_status"`
+	GatherResource     bool            `toml:"gather_resource_metrics"`
+	GatherInterface    bool            `toml:"gather_interface_metrics"`
+	IntervalSlow       string          `toml:"interval_slow"`
 	tls.ClientConfig
 
-	client *http.Client
+	client           *http.Client
+	lastT            time.Time
+	scanIntervalSlow uint32
 }
 
 const (
@@ -34,7 +40,22 @@ var sampleConfig = `
   ## An array of API URI to gather stats.
   urls = ["http://firewall/api"]
   
-  # HTTP response timeout (default: 5s)
+  ## Array if interfaces of which metrics should be collected
+  interface = ["ethernet1/1", "ethernet1/2"]
+
+  ## Gather interface metrics
+  gather_interface_metrics = true
+
+  ## Gather resource metrics (dataplane CPU load etc)
+  gather_resource_metrics = true
+
+  ## Gather dynamic updates status (threat, app, av update versions & release dates)
+  gather_update_status = false
+
+  ## Some queries we may want to run less often
+  interval_slow = "1m"
+
+  ## HTTP response timeout (default: 5s)
   response_timeout = "5s"
 
   ## Optional TLS Config
@@ -45,29 +66,29 @@ var sampleConfig = `
   # insecure_skip_verify = false
 `
 
-func (n *PanOsAPI) SampleConfig() string {
+func (p *PanOsAPI) SampleConfig() string {
 	return sampleConfig
 }
 
-func (n *PanOsAPI) Description() string {
+func (p *PanOsAPI) Description() string {
 	return "PAN-OS API plugin"
 }
 
-func (n *PanOsAPI) Gather(acc telegraf.Accumulator) error {
+func (p *PanOsAPI) Gather(acc telegraf.Accumulator) error {
 	var wg sync.WaitGroup
 
 	// Create an HTTP client that is re-used for each
 	// collection interval
 
-	if n.client == nil {
-		client, err := n.createHTTPClient()
+	if p.client == nil {
+		client, err := p.createHTTPClient()
 		if err != nil {
 			return err
 		}
-		n.client = client
+		p.client = client
 	}
 
-	for _, u := range n.Urls {
+	for _, u := range p.Urls {
 		addr, err := url.Parse(u)
 		if err != nil {
 			acc.AddError(fmt.Errorf("unable to parse address '%s': %s", u, err))
@@ -77,20 +98,28 @@ func (n *PanOsAPI) Gather(acc telegraf.Accumulator) error {
 		wg.Add(1)
 		go func(addr *url.URL) {
 			defer wg.Done()
-			n.gatherMetrics(addr, acc)
+			p.gatherMetrics(addr, acc)
 		}(addr)
+	}
+
+	// init long interval scanning
+	if len(p.IntervalSlow) > 0 {
+		interval, err := time.ParseDuration(p.IntervalSlow)
+		if err == nil && interval.Seconds() >= 1.0 {
+			p.scanIntervalSlow = uint32(interval.Seconds())
+		}
 	}
 
 	wg.Wait()
 	return nil
 }
 
-func (n *PanOsAPI) createHTTPClient() (*http.Client, error) {
-	if n.ResponseTimeout < config.Duration(time.Second) {
-		n.ResponseTimeout = config.Duration(time.Second * 5)
+func (p *PanOsAPI) createHTTPClient() (*http.Client, error) {
+	if p.ResponseTimeout < config.Duration(time.Second) {
+		p.ResponseTimeout = config.Duration(time.Second * 5)
 	}
 
-	tlsConfig, err := n.ClientConfig.TLSConfig()
+	tlsConfig, err := p.ClientConfig.TLSConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +128,7 @@ func (n *PanOsAPI) createHTTPClient() (*http.Client, error) {
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 		},
-		Timeout: time.Duration(n.ResponseTimeout),
+		Timeout: time.Duration(p.ResponseTimeout),
 	}
 
 	return client, nil

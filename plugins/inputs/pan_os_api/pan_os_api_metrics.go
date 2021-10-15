@@ -2,7 +2,6 @@ package pan_os_api
 
 import (
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -15,31 +14,29 @@ import (
 	"github.com/influxdata/telegraf"
 )
 
-var (
-	// errNotFound signals that the PAN-OS API routes does not exist.
-	errNotFound = errors.New("not found")
-)
-
 func (p *PanOsAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
-	addError(acc, p.gatherSignatureDetails(addr, acc))
-	addError(acc, p.gatherInterfaceCounters(addr, acc))
-	addError(acc, p.gatherCoreLoad(addr, acc))
-}
+	if p.GatherInterface {
+		p.gatherInterfaceMetrics(addr, acc)
+	}
 
-func addError(acc telegraf.Accumulator, err error) {
-	// This plugin has hardcoded API resource paths it checks that may not
-	// be in the nginx.conf.  Currently, this is to prevent logging of
-	// paths that are not configured.
-	//
-	// The correct solution is to do a GET to /api to get the available paths
-	// on the server rather than simply ignore.
-	if err != errNotFound {
-		acc.AddError(err)
+	if p.GatherResource {
+		p.gatherResourceMetrics(addr, acc)
+	}
+
+	if p.GatherUpdateStatus {
+		// gather dynamic update stats at slower rate
+		if len(p.IntervalSlow) > 0 {
+			if uint32(time.Since(p.lastT).Seconds()) >= p.scanIntervalSlow {
+				p.gatherUpdateStatus(addr, acc)
+				p.lastT = time.Now()
+			}
+		}
 	}
 }
 
-// convert date returned by PAN-OS API to RFC3339
 func convertDate(date string) string {
+	// convert date returned by PAN-OS API to RFC3339
+
 	// set date layout for conversion
 	dateLayout := "2006/01/02 15:04:05 MST"
 	// todo fix error handling
@@ -49,8 +46,8 @@ func convertDate(date string) string {
 	return t.Format(time.RFC3339)
 }
 
-// parse target device URLs from configurtion
 func (p *PanOsAPI) gatherURL(addr *url.URL, typ string, cmd string) ([]byte, error) {
+	// parse target device URLs from configuration
 	url := fmt.Sprintf("%s/api/?type=%s&cmd=%s&key=%s", addr.String(), typ, cmd, p.APIkey)
 	resp, err := p.client.Get(url)
 
@@ -61,10 +58,6 @@ func (p *PanOsAPI) gatherURL(addr *url.URL, typ string, cmd string) ([]byte, err
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-	case http.StatusNotFound:
-		// format as special error to catch and ignore as some nginx API
-		// features are either optional, or only available in some versions
-		return nil, errNotFound
 	default:
 		return nil, fmt.Errorf("%s returned HTTP status %s", url, resp.Status)
 	}
@@ -106,8 +99,8 @@ func (p *PanOsAPI) gatherHostname(addr *url.URL, acc telegraf.Accumulator) error
 	return nil
 }
 
-// reports PAN-OS Anti-Virus, App and Threat signature versions and release dates
-func (p *PanOsAPI) gatherSignatureDetails(addr *url.URL, acc telegraf.Accumulator) error {
+func (p *PanOsAPI) gatherUpdateStatus(addr *url.URL, acc telegraf.Accumulator) error {
+	// reports PAN-OS Anti-Virus, App and Threat signature versions and release dates
 	const typ = "op"
 	body, err := p.gatherURL(addr, typ, systemInfoCmd)
 	if err != nil {
@@ -122,7 +115,7 @@ func (p *PanOsAPI) gatherSignatureDetails(addr *url.URL, acc telegraf.Accumulato
 	}
 
 	acc.AddFields(
-		"pan_os_api_signatures",
+		"pan_os_api_update",
 		map[string]interface{}{
 			"app-version":         response.Result.System.AppVersion,
 			"app-release-date":    convertDate(response.Result.System.AppRelease),
@@ -136,8 +129,8 @@ func (p *PanOsAPI) gatherSignatureDetails(addr *url.URL, acc telegraf.Accumulato
 	return nil
 }
 
-// interface counters
-func (p *PanOsAPI) gatherInterfaceCounters(addr *url.URL, acc telegraf.Accumulator) error {
+func (p *PanOsAPI) gatherInterfaceMetrics(addr *url.URL, acc telegraf.Accumulator) error {
+	// interface counters
 	const typ = "op"
 
 	// loop through interfaces
@@ -174,8 +167,8 @@ func (p *PanOsAPI) gatherInterfaceCounters(addr *url.URL, acc telegraf.Accumulat
 	return nil
 }
 
-// resource monitor
-func (p *PanOsAPI) gatherCoreLoad(addr *url.URL, acc telegraf.Accumulator) error {
+func (p *PanOsAPI) gatherResourceMetrics(addr *url.URL, acc telegraf.Accumulator) error {
+	// resource metrics
 	const typ = "op"
 
 	body, err := p.gatherURL(addr, typ, resourceMonitorPerSecond)
@@ -217,7 +210,7 @@ func (p *PanOsAPI) gatherCoreLoad(addr *url.URL, acc telegraf.Accumulator) error
 		avgUtil := sum / period
 
 		acc.AddFields(
-			"pan_os_api_utilization",
+			"pan_os_api_resource",
 			map[string]interface{}{
 				"core":        coreId,
 				"utilization": avgUtil,
