@@ -45,10 +45,30 @@ func deepMatchRune(str, pattern []rune, simple bool) bool {
 	return len(str) == 0 && len(pattern) == 0
 }
 
+func convertDate(date string) string {
+	// convert date returned by PAN-OS API to RFC3339
+
+	// set date layout for conversion
+	dateLayout := "2006/01/02 15:04:05 MST"
+	// todo fix error handling
+	t, _ := time.Parse(dateLayout, date)
+
+	// todo maybe output date format should be user selectable?
+	return t.Format(time.RFC3339)
+}
+
 func (p *PanOsAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
 	if len(p.IntervalSlow) > 0 {
+		// long interval data collection
 		if uint32(time.Since(p.lastT).Seconds()) >= p.scanIntervalSlow {
-			p.gatherInterfaces(addr)
+			if p.GatherUpdateStatus {
+				// get dynamic updates status
+				p.gatherUpdateStatus(addr, acc)
+			}
+			if p.GatherInterface {
+				// update device interface table
+				p.gatherInterfaces(addr)
+			}
 			p.lastT = time.Now()
 		}
 	}
@@ -60,28 +80,6 @@ func (p *PanOsAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
 	if p.GatherResource {
 		p.gatherResourceMetrics(addr, acc)
 	}
-
-	if p.GatherUpdateStatus {
-		// gather dynamic update stats at slower rate
-		if len(p.IntervalSlow) > 0 {
-			if uint32(time.Since(p.lastT).Seconds()) >= p.scanIntervalSlow {
-				p.gatherUpdateStatus(addr, acc)
-				p.lastT = time.Now()
-			}
-		}
-	}
-}
-
-func convertDate(date string) string {
-	// convert date returned by PAN-OS API to RFC3339
-
-	// set date layout for conversion
-	dateLayout := "2006/01/02 15:04:05 MST"
-	// todo fix error handling
-	t, _ := time.Parse(dateLayout, date)
-
-	// todo maybe output date format should be user selectable?
-	return t.Format(time.RFC3339)
 }
 
 func (p *PanOsAPI) gatherURL(addr *url.URL, typ string, cmd string) ([]byte, error) {
@@ -168,16 +166,13 @@ func (p *PanOsAPI) gatherUpdateStatus(addr *url.URL, acc telegraf.Accumulator) e
 }
 
 func (p *PanOsAPI) gatherInterfaces(addr *url.URL) error {
-	const typ = "op"
-	const cmd = "<show><interface>all</interface></show>"
-	body, err := p.gatherURL(addr, typ, cmd)
+	// get list of all interfaces in target device
+	body, err := p.gatherURL(addr, "op", "<show><interface>all</interface></show>")
 	if err != nil {
 		return err
 	}
 
 	var response = &Response{}
-
-	// parse XML
 	if err := xml.Unmarshal(body, response); err != nil {
 		return err
 	}
@@ -198,34 +193,35 @@ func (p *PanOsAPI) gatherInterfaceMetrics(addr *url.URL, acc telegraf.Accumulato
 
 	// go through all reported cores
 	for _, ifnet := range p.deviceInts {
-		if Match("e*", ifnet) {
+		for _, ifmatch := range p.Interfaces {
+			if Match(ifmatch, ifnet) {
+				cmd := strings.Replace(interfaceCounters, "_if_", ifnet, 1)
+				body, err := p.gatherURL(addr, typ, cmd)
+				if err != nil {
+					return err
+				}
 
-			cmd := strings.Replace(interfaceCounters, "_if_", ifnet, 1)
-			body, err := p.gatherURL(addr, typ, cmd)
-			if err != nil {
-				return err
+				var response = &Response{}
+
+				// parse XML
+				if err := xml.Unmarshal(body, response); err != nil {
+					return err
+				}
+
+				acc.AddFields(
+					"pan_os_api_interface",
+					map[string]interface{}{
+						"interface":   ifnet,
+						"in-bytes":    response.Result.Interface.Counters.Interface.Entry.InBytes,
+						"in-drops":    response.Result.Interface.Counters.Interface.Entry.InDrops,
+						"in-errors":   response.Result.Interface.Counters.Interface.Entry.InErrors,
+						"in-packets":  response.Result.Interface.Counters.Interface.Entry.InPackets,
+						"out-bytes":   response.Result.Interface.Counters.Interface.Entry.OutBytes,
+						"out-packets": response.Result.Interface.Counters.Interface.Entry.OutPackets,
+					},
+					getTags(addr),
+				)
 			}
-
-			var response = &Response{}
-
-			// parse XML
-			if err := xml.Unmarshal(body, response); err != nil {
-				return err
-			}
-
-			acc.AddFields(
-				"pan_os_api_interface",
-				map[string]interface{}{
-					"interface":   ifnet,
-					"in-bytes":    response.Result.Interface.Counters.Interface.Entry.InBytes,
-					"in-drops":    response.Result.Interface.Counters.Interface.Entry.InDrops,
-					"in-errors":   response.Result.Interface.Counters.Interface.Entry.InErrors,
-					"in-packets":  response.Result.Interface.Counters.Interface.Entry.InPackets,
-					"out-bytes":   response.Result.Interface.Counters.Interface.Entry.OutBytes,
-					"out-packets": response.Result.Interface.Counters.Interface.Entry.OutPackets,
-				},
-				getTags(addr),
-			)
 		}
 	}
 	return nil
