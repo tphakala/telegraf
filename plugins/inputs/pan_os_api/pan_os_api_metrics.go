@@ -80,6 +80,10 @@ func (p *PanOsAPI) gatherMetrics(addr *url.URL, acc telegraf.Accumulator) {
 	if p.GatherResource {
 		p.gatherResourceMetrics(addr, acc)
 	}
+
+	if p.GatherVpnState {
+		p.gatherVpnFlow(addr, acc)
+	}
 }
 
 func (p *PanOsAPI) gatherURL(addr *url.URL, typ string, cmd string) ([]byte, error) {
@@ -114,7 +118,7 @@ func (p *PanOsAPI) gatherURL(addr *url.URL, typ string, cmd string) ([]byte, err
 
 func (p *PanOsAPI) gatherHostname(addr *url.URL, acc telegraf.Accumulator) error {
 	const typ = "op"
-	body, err := p.gatherURL(addr, typ, systemInfoCmd)
+	body, err := p.gatherURL(addr, typ, showSystemInfo)
 	if err != nil {
 		return err
 	}
@@ -138,7 +142,7 @@ func (p *PanOsAPI) gatherHostname(addr *url.URL, acc telegraf.Accumulator) error
 func (p *PanOsAPI) gatherUpdateStatus(addr *url.URL, acc telegraf.Accumulator) error {
 	// reports PAN-OS Anti-Virus, App and Threat signature versions and release dates
 	const typ = "op"
-	body, err := p.gatherURL(addr, typ, systemInfoCmd)
+	body, err := p.gatherURL(addr, typ, showSystemInfo)
 	if err != nil {
 		return err
 	}
@@ -187,6 +191,38 @@ func (p *PanOsAPI) gatherInterfaces(addr *url.URL) error {
 	return nil
 }
 
+func (p *PanOsAPI) gatherVpnFlow(addr *url.URL, acc telegraf.Accumulator) error {
+	// VPN flow status
+	const typ = "op"
+	body, err := p.gatherURL(addr, typ, showVpnFlow)
+	if err != nil {
+		return err
+	}
+
+	var response = &Response{}
+
+	// parse XML
+	if err := xml.Unmarshal(body, response); err != nil {
+		return err
+	}
+
+	vpnEntries := response.Result.IPSec.Entry
+
+	for _, vpn := range vpnEntries {
+
+		acc.AddFields(
+			"pan_os_api_vpnflow",
+			map[string]interface{}{
+				"vpn-tunnel-name":  vpn.Name,
+				"vpn-tunnel-id":    vpn.Id,
+				"vpn-tunnel-state": vpn.State,
+			},
+			getTags(addr),
+		)
+	}
+	return nil
+}
+
 func (p *PanOsAPI) gatherInterfaceMetrics(addr *url.URL, acc telegraf.Accumulator) error {
 	// interface counters
 	const typ = "op"
@@ -195,7 +231,7 @@ func (p *PanOsAPI) gatherInterfaceMetrics(addr *url.URL, acc telegraf.Accumulato
 	for _, ifnet := range p.deviceInts {
 		for _, ifmatch := range p.Interfaces {
 			if Match(ifmatch, ifnet) {
-				cmd := strings.Replace(interfaceCounters, "_if_", ifnet, 1)
+				cmd := strings.Replace(showInterface, "_if_", ifnet, 1)
 				body, err := p.gatherURL(addr, typ, cmd)
 				if err != nil {
 					return err
@@ -231,7 +267,7 @@ func (p *PanOsAPI) gatherResourceMetrics(addr *url.URL, acc telegraf.Accumulator
 	// resource metrics
 	const typ = "op"
 
-	body, err := p.gatherURL(addr, typ, resourceMonitorPerSecond)
+	body, err := p.gatherURL(addr, typ, showResourceMonitor)
 	if err != nil {
 		return err
 	}

@@ -21,6 +21,7 @@ type PanOsAPI struct {
 	GatherUpdateStatus bool            `toml:"gather_update_status"`
 	GatherResource     bool            `toml:"gather_resource_metrics"`
 	GatherInterface    bool            `toml:"gather_interface_metrics"`
+	GatherVpnState     bool            `toml:"gather_vpn_state"`
 	IntervalSlow       string          `toml:"interval_slow"`
 	tls.ClientConfig
 
@@ -32,9 +33,10 @@ type PanOsAPI struct {
 
 const (
 	// Commands
-	systemInfoCmd            = "<show><system><info></info></system></show>"
-	interfaceCounters        = "<show><interface>_if_</interface></show>"
-	resourceMonitorPerSecond = "<show><running><resource-monitor><second></second></resource-monitor></running></show>"
+	showSystemInfo      = "<show><system><info></info></system></show>"
+	showInterface       = "<show><interface>_if_</interface></show>"
+	showResourceMonitor = "<show><running><resource-monitor><second></second></resource-monitor></running></show>"
+	showVpnFlow         = "<show><vpn><flow></flow></vpn></show>"
 )
 
 var sampleConfig = `

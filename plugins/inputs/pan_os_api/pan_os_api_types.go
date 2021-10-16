@@ -21,8 +21,18 @@ type Response struct {
 		NumInstalled    uint64          `xml:"num-installed"`      // unknown
 		GPCurUsers      uint64          `xml:"TotalCurrentUsers"`  // GlobalProtect Portal current users
 		GPPrevUsers     uint64          `xml:"TotalPreviousUsers"` // GlobalProtect Portal previous(?) users
+		Total           string          `xml:"total"`
+		NumIPSec        string          `xml:"num_ipsec"`
 		Interface       Interface       `xml:"ifnet"`
 		ResourceMonitor ResourceMonitor `xml:"resource-monitor"`
+		IPSec           struct {
+			Entry []struct {
+				PeerIp string `xml:"peerip"`
+				Name   string `xml:"name"`
+				State  string `xml:"state"`
+				Id     int    `xml:"id"`
+			}
+		}
 	}
 }
 
@@ -149,24 +159,4 @@ type Entry struct {
 	Port        Port     `xml:"port"`
 	CoreId      uint8    `xml:"coreid"`
 	Value       string   `xml:"value"`
-
-	//Version string   `xml:"version"`
-	//Pkginfo Pkginfo  `xml:"pkginfo"`
-
 }
-
-/*
-no tests for these for now
-
-type PluginVersions struct {
-	XMLName        xml.Name `xml:"plugin_versions"`
-	PluginVersions []Entry  `xml:"entry"`
-}
-
-
-
-type Pkginfo struct {
-	XMLName xml.Name `xml:"pkginfo"`
-	Pkginfo string   `xml:"pkginfo"`
-}
-*/
