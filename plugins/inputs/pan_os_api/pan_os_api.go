@@ -45,6 +45,9 @@ const (
 var sampleConfig = `
   ## An array of firewalls to gather stats.
   urls = ["https://firewall"]
+
+  ## API key used for authenticating to XML API
+  api_key = ""
   
   ## Array if interfaces of which metrics should be collected, supports * and ? wildcards
   interfaces_include = ["ethernet1/?", "tunnel*"]
