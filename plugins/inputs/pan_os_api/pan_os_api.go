@@ -46,9 +46,12 @@ var sampleConfig = `
   ## An array of API URI to gather stats.
   urls = ["http://firewall/api"]
   
-  ## Array if interfaces of which metrics should be collected
-  interface = ["ethernet1/1", "ethernet1/2"]
+  ## Array if interfaces of which metrics should be collected, supports * and ? wildcards
+  interfaces_include = ["ethernet1/?", "tunnel*"]
 
+  ## Array if interfaces which should be excluded from metrics collection, supports * and ?
+  interfaces_exclude = ["loopback", "vxlan"]
+  
   ## Gather interface metrics
   gather_interface_metrics = true
 
@@ -58,6 +61,9 @@ var sampleConfig = `
   ## Gather dynamic updates status (threat, app, av update versions & release dates)
   gather_update_status = false
 
+  ## Gather IPSec VPN tunnel states (init, active)
+  gather_vpn_state = false
+  
   ## Some queries we may want to run less often
   interval_slow = "1m"
 
