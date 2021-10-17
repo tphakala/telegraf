@@ -26,12 +26,8 @@ type Response struct {
 		Interface       Interface       `xml:"ifnet"`
 		ResourceMonitor ResourceMonitor `xml:"resource-monitor"`
 		IPSec           struct {
-			Entry []struct {
-				PeerIp string `xml:"peerip"`
-				Name   string `xml:"name"`
-				State  string `xml:"state"`
-				Id     int    `xml:"id"`
-			}
+			XMLName xml.Name `xml:"IPSec"`
+			Entry   []Entry  `xml:"entry"`
 		}
 	}
 }
@@ -159,4 +155,7 @@ type Entry struct {
 	Port        Port     `xml:"port"`
 	CoreId      uint8    `xml:"coreid"`
 	Value       string   `xml:"value"`
+	PeerIp      string   `xml:"peerip"`
+	State       string   `xml:"state"`
+	Id          int      `xml:"id"`
 }

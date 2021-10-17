@@ -37,6 +37,8 @@ const (
 	showInterface       = "<show><interface>_if_</interface></show>"
 	showResourceMonitor = "<show><running><resource-monitor><second></second></resource-monitor></running></show>"
 	showVpnFlow         = "<show><vpn><flow></flow></vpn></show>"
+	showBgpPeer         = "<show><routing><protocol><bgp><peer></peer></bgp></protocol></routing></show>"
+	showCounterGlobal   = "<show><counter><global></global></counter></show>"
 )
 
 var sampleConfig = `

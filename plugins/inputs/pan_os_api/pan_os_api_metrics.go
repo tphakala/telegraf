@@ -169,28 +169,6 @@ func (p *PanOsAPI) gatherUpdateStatus(addr *url.URL, acc telegraf.Accumulator) e
 	return nil
 }
 
-func (p *PanOsAPI) gatherInterfaces(addr *url.URL) error {
-	// get list of all interfaces in target device
-	body, err := p.gatherURL(addr, "op", "<show><interface>all</interface></show>")
-	if err != nil {
-		return err
-	}
-
-	var response = &Response{}
-	if err := xml.Unmarshal(body, response); err != nil {
-		return err
-	}
-
-	ifnets := response.Result.Interface.Entry
-	p.deviceInts = make([]string, len(ifnets))
-
-	// go through all reported cores
-	for i, ifnet := range ifnets {
-		p.deviceInts[i] = ifnet.Name
-	}
-	return nil
-}
-
 func (p *PanOsAPI) gatherVpnFlow(addr *url.URL, acc telegraf.Accumulator) error {
 	// VPN flow status
 	const typ = "op"
@@ -209,7 +187,6 @@ func (p *PanOsAPI) gatherVpnFlow(addr *url.URL, acc telegraf.Accumulator) error 
 	vpnEntries := response.Result.IPSec.Entry
 
 	for _, vpn := range vpnEntries {
-
 		acc.AddFields(
 			"pan_os_api_vpnflow",
 			map[string]interface{}{
@@ -219,6 +196,28 @@ func (p *PanOsAPI) gatherVpnFlow(addr *url.URL, acc telegraf.Accumulator) error 
 			},
 			getTags(addr),
 		)
+	}
+	return nil
+}
+
+func (p *PanOsAPI) gatherInterfaces(addr *url.URL) error {
+	// get list of all interfaces in target device
+	body, err := p.gatherURL(addr, "op", "<show><interface>all</interface></show>")
+	if err != nil {
+		return err
+	}
+
+	var response = &Response{}
+	if err := xml.Unmarshal(body, response); err != nil {
+		return err
+	}
+
+	ifnets := response.Result.Interface.Entry
+	p.deviceInts = make([]string, len(ifnets))
+
+	// go through all reported cores
+	for i, ifnet := range ifnets {
+		p.deviceInts[i] = ifnet.Name
 	}
 	return nil
 }
