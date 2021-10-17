@@ -124,7 +124,6 @@ func (p *PanOsAPI) gatherHostname(addr *url.URL, acc telegraf.Accumulator) error
 	}
 
 	var response = &Response{}
-
 	if err := xml.Unmarshal(body, response); err != nil {
 		return err
 	}
@@ -148,8 +147,6 @@ func (p *PanOsAPI) gatherUpdateStatus(addr *url.URL, acc telegraf.Accumulator) e
 	}
 
 	var response = &Response{}
-
-	// parse XML
 	if err := xml.Unmarshal(body, response); err != nil {
 		return err
 	}
@@ -178,8 +175,6 @@ func (p *PanOsAPI) gatherVpnFlow(addr *url.URL, acc telegraf.Accumulator) error 
 	}
 
 	var response = &Response{}
-
-	// parse XML
 	if err := xml.Unmarshal(body, response); err != nil {
 		return err
 	}
@@ -212,12 +207,16 @@ func (p *PanOsAPI) gatherInterfaces(addr *url.URL) error {
 		return err
 	}
 
-	ifnets := response.Result.Interface.Entry
-	p.deviceInts = make([]string, len(ifnets))
+	deviceInterfaces := response.Result.Interface.Entry
 
-	// go through all reported cores
-	for i, ifnet := range ifnets {
-		p.deviceInts[i] = ifnet.Name
+	for _, deviceInterface := range deviceInterfaces {
+		// match device interfaces against included list
+		for _, include := range p.InterfaceIncludeList {
+			if Match(include, deviceInterface.Name) {
+				p.includedInterfaces = append(p.includedInterfaces, deviceInterface.Name)
+			}
+		}
+
 	}
 	return nil
 }
@@ -226,38 +225,33 @@ func (p *PanOsAPI) gatherInterfaceMetrics(addr *url.URL, acc telegraf.Accumulato
 	// interface counters
 	const typ = "op"
 
-	// go through all reported cores
-	for _, ifnet := range p.deviceInts {
-		for _, ifmatch := range p.Interfaces {
-			if Match(ifmatch, ifnet) {
-				cmd := strings.Replace(showInterface, "_if_", ifnet, 1)
-				body, err := p.gatherURL(addr, typ, cmd)
-				if err != nil {
-					return err
-				}
-
-				var response = &Response{}
-
-				// parse XML
-				if err := xml.Unmarshal(body, response); err != nil {
-					return err
-				}
-
-				acc.AddFields(
-					"pan_os_api_interface",
-					map[string]interface{}{
-						"interface":   ifnet,
-						"in-bytes":    response.Result.Interface.Counters.Interface.Entry.InBytes,
-						"in-drops":    response.Result.Interface.Counters.Interface.Entry.InDrops,
-						"in-errors":   response.Result.Interface.Counters.Interface.Entry.InErrors,
-						"in-packets":  response.Result.Interface.Counters.Interface.Entry.InPackets,
-						"out-bytes":   response.Result.Interface.Counters.Interface.Entry.OutBytes,
-						"out-packets": response.Result.Interface.Counters.Interface.Entry.OutPackets,
-					},
-					getTags(addr),
-				)
-			}
+	// gather all included interfaces
+	for _, interfaceName := range p.includedInterfaces {
+		cmd := strings.Replace(showInterface, "_if_", interfaceName, 1)
+		body, err := p.gatherURL(addr, typ, cmd)
+		if err != nil {
+			return err
 		}
+
+		var response = &Response{}
+		if err := xml.Unmarshal(body, response); err != nil {
+			return err
+		}
+
+		acc.AddFields(
+			"pan_os_api_interface",
+			map[string]interface{}{
+				"interface":   interfaceName,
+				"in-bytes":    response.Result.Interface.Counters.Interface.Entry.InBytes,
+				"in-drops":    response.Result.Interface.Counters.Interface.Entry.InDrops,
+				"in-errors":   response.Result.Interface.Counters.Interface.Entry.InErrors,
+				"in-packets":  response.Result.Interface.Counters.Interface.Entry.InPackets,
+				"out-bytes":   response.Result.Interface.Counters.Interface.Entry.OutBytes,
+				"out-packets": response.Result.Interface.Counters.Interface.Entry.OutPackets,
+			},
+			getTags(addr),
+		)
+
 	}
 	return nil
 }
@@ -272,8 +266,6 @@ func (p *PanOsAPI) gatherResourceMetrics(addr *url.URL, acc telegraf.Accumulator
 	}
 
 	var response = &Response{}
-
-	// parse XML
 	if err := xml.Unmarshal(body, response); err != nil {
 		return err
 	}

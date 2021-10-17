@@ -14,21 +14,22 @@ import (
 )
 
 type PanOsAPI struct {
-	Urls               []string        `toml:"urls"`
-	ResponseTimeout    config.Duration `toml:"response_timeout"`
-	APIkey             string          `toml:"api_key"`
-	Interfaces         []string        `toml:"interfaces"`
-	GatherUpdateStatus bool            `toml:"gather_update_status"`
-	GatherResource     bool            `toml:"gather_resource_metrics"`
-	GatherInterface    bool            `toml:"gather_interface_metrics"`
-	GatherVpnState     bool            `toml:"gather_vpn_state"`
-	IntervalSlow       string          `toml:"interval_slow"`
+	Urls                 []string        `toml:"urls"`
+	ResponseTimeout      config.Duration `toml:"response_timeout"`
+	APIkey               string          `toml:"api_key"`
+	InterfaceIncludeList []string        `toml:"interfaces_include"`
+	InterfaceExcludeList []string        `toml:"interfaces_exclude"`
+	GatherUpdateStatus   bool            `toml:"gather_update_status"`
+	GatherResource       bool            `toml:"gather_resource_metrics"`
+	GatherInterface      bool            `toml:"gather_interface_metrics"`
+	GatherVpnState       bool            `toml:"gather_vpn_state"`
+	IntervalSlow         string          `toml:"interval_slow"`
 	tls.ClientConfig
 
-	client           *http.Client
-	lastT            time.Time
-	scanIntervalSlow uint32
-	deviceInts       []string
+	client             *http.Client
+	lastT              time.Time
+	scanIntervalSlow   uint32
+	includedInterfaces []string
 }
 
 const (
