@@ -165,7 +165,7 @@ require (
 	github.com/kardianos/service v1.0.0
 	github.com/karrick/godirwalk v1.16.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/klauspost/compress v1.13.1 // indirect
+	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -181,7 +181,7 @@ require (
 	github.com/mdlayher/netlink v1.1.0 // indirect
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/miekg/dns v1.1.43
-	github.com/minio/highwayhash v1.0.1 // indirect
+	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.2.2 // indirect
 	github.com/moby/ipvs v1.0.1
@@ -193,10 +193,10 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/multiplay/go-ts3 v1.0.0
 	github.com/naoina/go-stringutil v0.1.0 // indirect
-	github.com/nats-io/jwt/v2 v2.0.2 // indirect
-	github.com/nats-io/nats-server/v2 v2.2.6
-	github.com/nats-io/nats.go v1.11.0
-	github.com/nats-io/nkeys v0.3.0 // indirect
+	github.com/nats-io/jwt/v2 v2.5.0 // indirect
+	github.com/nats-io/nats-server/v2 v2.9.23
+	github.com/nats-io/nats.go v1.28.0
+	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.5.1
 	github.com/nsqio/go-nsq v1.0.8
@@ -243,7 +243,7 @@ require (
 	github.com/snowflakedb/gosnowflake v1.5.0
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/tbrandon/mbserver v0.0.0-20170611213546-993e1772cc62
 	github.com/testcontainers/testcontainers-go v0.11.1
 	github.com/tidwall/gjson v1.9.0
@@ -277,16 +277,16 @@ require (
 	go.starlark.net v0.0.0-20210406145628-7a1108eaa012
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
-	golang.org/x/mod v0.4.2 // indirect
-	golang.org/x/net v0.0.0-20210610132358-84b48f89b13b
+	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/net v0.10.0
 	golang.org/x/oauth2 v0.0.0-20210805134026-6f1e6394065a
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069
-	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
-	golang.org/x/text v0.3.6
-	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	golang.org/x/tools v0.1.5
+	golang.org/x/sync v0.1.0
+	golang.org/x/sys v0.11.0
+	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/text v0.12.0
+	golang.org/x/time v0.3.0 // indirect
+	golang.org/x/tools v0.6.0
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	golang.zx2c4.com/wireguard v0.0.20200121 // indirect
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200205215550-e35592f146e4
@@ -312,7 +312,7 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.20.6
 	k8s.io/apimachinery v0.22.2
